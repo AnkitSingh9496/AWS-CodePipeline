@@ -37,11 +37,67 @@ phases:
       - kubectl version --client
       - echo Updating kubeconfig...
       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+      - echo Verifying cluster connection...
+      - kubectl cluster-info
+      - echo Validating Kubernetes manifest...
+      - kubectl apply -f $K8S_MANIFEST_FILE --dry-run=client
       - echo Applying Kubernetes manifests...
       - kubectl apply -f $K8S_MANIFEST_FILE
+      - echo Waiting for deployment rollout...
+      - kubectl rollout status deployment/$KUBE_DEPLOYMENT_NAME --timeout=300s
       - echo Updating deployment image...
       - kubectl set image deployment/$KUBE_DEPLOYMENT_NAME $KUBE_CONTAINER_NAME=$REPOSITORY_URI:$IMAGE_TAG
+      - echo Waiting for updated deployment rollout...
+      - kubectl rollout status deployment/$KUBE_DEPLOYMENT_NAME --timeout=300s
       - echo ✅ Deployment complete
+
+
+
+
+
+# version: 0.2
+
+# env:
+#   variables:
+#     ECR_REPOSITORY: circleci
+#     AWS_REGION: ap-south-1
+#     CLUSTER_NAME: CircleCI
+#     KUBE_DEPLOYMENT_NAME: nodejs-app-deployment
+#     KUBE_CONTAINER_NAME: nodejs-app-container
+#     K8S_MANIFEST_FILE: k8s-deployment.yaml
+
+# phases:
+#   pre_build:
+#     commands:
+#       - echo Logging in to Amazon ECR...
+#       - aws --version
+#       - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin 244706281787.dkr.ecr.$AWS_REGION.amazonaws.com
+#       - REPOSITORY_URI=244706281787.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY
+#       - IMAGE_TAG=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
+#       - echo "IMAGE_URI=$REPOSITORY_URI:$IMAGE_TAG"
+  
+#   build:
+#     commands:
+#       - echo Building Docker image...
+#       - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+  
+#   post_build:
+#     commands:
+#       - echo Pushing Docker image...
+#       - docker push $REPOSITORY_URI:$IMAGE_TAG
+#       - echo Installing kubectl...
+#       - curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+#       - chmod +x kubectl
+#       - sudo mv kubectl /usr/local/bin/
+#       - echo Verifying kubectl installation...
+#       - kubectl version --client
+#       - echo Updating kubeconfig...
+#       - aws eks update-kubeconfig --region $AWS_REGION --name $CLUSTER_NAME
+#       - echo Applying Kubernetes manifests...
+#       - kubectl apply -f $K8S_MANIFEST_FILE
+#       - echo Updating deployment image...
+#       - kubectl set image deployment/$KUBE_DEPLOYMENT_NAME $KUBE_CONTAINER_NAME=$REPOSITORY_URI:$IMAGE_TAG
+#       - echo ✅ Deployment complete
 
 
 
